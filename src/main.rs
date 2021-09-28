@@ -270,18 +270,21 @@ fn main() {
 
         canvas.present();
 
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..} => break 'running,
-                Event::KeyDown { keycode: Some(key), ..} => {
-                    match keybinds.get(&key) {
-                        Some(closure) => closure(&mut snake),
-                        _ => {},
-                    };
-                },
-                _ => {},
-            };
-        }
+        match event_pump.poll_event() {
+            Some(event) => {
+                match event {
+                    Event::Quit {..} => break 'running,
+                    Event::KeyDown { keycode: Some(key), ..} => {
+                        match keybinds.get(&key) {
+                            Some(closure) => closure(&mut snake),
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                };
+            },
+            _ => {},
+        };
 
         std::thread::sleep(Duration::new(0, 100_000_000u32));
     }
