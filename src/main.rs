@@ -92,7 +92,7 @@ struct Snake {
 }
 
 impl Snake {
-    fn new() -> Snake {
+    fn new() -> Self {
         Snake {
             head: SnakeRect::new(Direction::Right, 100, 100),
             body: None,
@@ -199,6 +199,19 @@ impl Snake {
     }
 }
 
+fn render(snake: &mut Snake, canvas: &mut sdl2::render::WindowCanvas) {
+        canvas.set_draw_color(Color::RGB(255, 255, 255));
+        canvas.clear();
+
+        if snake.is_moving {
+            snake.slide();
+        }
+
+        canvas.set_draw_color(Color::RGB(0, 0, 0));
+        canvas.fill_rects(&snake.render()).unwrap();
+
+        canvas.present();
+} 
 
 fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -258,33 +271,22 @@ fn main() {
     let mut snake = Snake::new();
 
     'running: loop {
-        canvas.set_draw_color(Color::RGB(255, 255, 255));
-        canvas.clear();
-
-        if snake.is_moving {
-            snake.slide();
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit {..} => break 'running,
+                Event::KeyDown { keycode: Some(key), repeat: false, ..} => {
+                    match keybinds.get(&key) {
+                        Some(closure) => {
+                            closure(&mut snake);
+                        },
+                        _ => {},
+                    };
+                },
+                _ => {},
+            };
         }
-
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.fill_rects(&snake.render()).unwrap();
-
-        canvas.present();
-
-        match event_pump.poll_event() {
-            Some(event) => {
-                match event {
-                    Event::Quit {..} => break 'running,
-                    Event::KeyDown { keycode: Some(key), ..} => {
-                        match keybinds.get(&key) {
-                            Some(closure) => closure(&mut snake),
-                            _ => {},
-                        };
-                    },
-                    _ => {},
-                };
-            },
-            _ => {},
-        };
+        
+        render(&mut snake, &mut canvas);
 
         std::thread::sleep(Duration::new(0, 100_000_000u32));
     }
