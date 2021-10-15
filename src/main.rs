@@ -7,7 +7,7 @@ use rand::Rng;
 extern crate sdl2;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::event::Event;
+use sdl2::event::{Event, EventType};
 use sdl2::keyboard::Keycode;
 
 #[derive(Clone)]
@@ -256,37 +256,57 @@ fn main() {
             snake.set_direction(Direction::Right);
         })
     );
-    keybinds.insert(Keycode::Space, Box::new(|snake: &mut Snake| {
-            if snake.is_moving {
-                snake.is_moving = false;
-            } else {
-                snake.is_moving = true;
-            }
-        })
-    );
 
     let mut canvas = window.into_canvas().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
+    event_pump.disable_event(EventType::KeyUp);
 
     let mut snake = Snake::new();
+    let mut last: Keycode = Keycode::Power;
+    let mut last_event = false;
 
     'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..} => break 'running,
-                Event::KeyDown { keycode: Some(key), repeat: false, ..} => {
-                    match keybinds.get(&key) {
-                        Some(closure) => {
-                            closure(&mut snake);
-                        },
-                        _ => {},
-                    };
-                },
-                _ => {},
-            };
-        }
+//        match event_pump.poll_event() {
+//            Some(event) => {
+            for event in event_pump.poll_iter() {
+                last_event = false;
+                match event {
+                    Event::Quit {..} => break 'running,
+                    Event::KeyDown {keycode: Some(Keycode::Space), repeat: false, ..} => {
+                        if snake.is_moving {
+                            snake.is_moving = false;
+                        } else {
+                            snake.is_moving = true;
+                        }
+                    },
+                    Event::KeyDown { keycode: Some(key), ..} => {
+                        if key != last {
+                            render(&mut snake, &mut canvas);
+                            if event.is_keyboard() {
+                                match keybinds.get(&key) {
+                                    Some(closure) => {
+                                        closure(&mut snake);
+                                        last = key;
+                                    },
+                                    _ => {},
+                                };
+                            } else {}
+                        } else {
+                            last_event = true;
+                        }
+                    },
+                    _ => {},
+                };
+//            },
+//            _ => (),
+//        };
+            
+          }
         
-        render(&mut snake, &mut canvas);
+        if last_event {
+            render(&mut snake, &mut canvas);
+        }
+        last_event = true;
 
         std::thread::sleep(Duration::new(0, 100_000_000u32));
     }
